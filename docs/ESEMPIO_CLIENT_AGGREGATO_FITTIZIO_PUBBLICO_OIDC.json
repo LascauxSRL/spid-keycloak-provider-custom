@@ -1,0 +1,47 @@
+{
+  "clientId": "ente-pubblico-aggregato-fittizio-oidc",
+  "name": "Ente Pubblico Aggregato Fittizio (OIDC)",
+  "description": "Client OpenID Connect di test per collaudo tecnico - Ente pubblico aggregato (conforme Avviso SPID n°22 v3.0)",
+  "enabled": true,
+  "protocol": "openid-connect",
+  "publicClient": false,
+  "standardFlowEnabled": true,
+  "implicitFlowEnabled": false,
+  "directAccessGrantsEnabled": true,
+  "serviceAccountsEnabled": false,
+  "attributes": {
+    "spid.organizationNames": "it|Organizzazione fittizia per il collaudo",
+    "spid.organizationDisplayNames": "it|Organizzazione fittizia per il collaudo",
+    "spid.organizationUrls": "it|https://ente-fittizio.example.com",
+    
+    "spid.isCollaudo": "true",
+    
+    "spid.aggregated.company": "Organizzazione fittizia per il collaudo",
+    "spid.aggregated.ipaCode": "__aggrsint",
+    "spid.aggregated.isPrivate": "false"
+  },
+  "defaultClientScopes": [
+    "openid",
+    "profile",
+    "email",
+    "roles",
+    "web-origins",
+    "microprofile-jwt"
+  ],
+  "optionalClientScopes": [
+    "address",
+    "phone",
+    "offline_access"
+  ],
+  "fullScopeAllowed": true,
+  "redirectUris": [
+    "https://ente-fittizio.example.com/*",
+    "http://localhost:3000/*"
+  ],
+  "webOrigins": [
+    "https://ente-fittizio.example.com",
+    "http://localhost:3000"
+  ],
+  "baseUrl": "https://ente-fittizio.example.com",
+  "adminUrl": "https://ente-fittizio.example.com"
+}

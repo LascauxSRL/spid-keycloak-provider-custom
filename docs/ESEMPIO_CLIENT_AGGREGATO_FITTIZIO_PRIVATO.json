@@ -1,0 +1,46 @@
+{
+  "clientId": "azienda-privata-aggregata-fittizia",
+  "name": "Azienda Privata Aggregata Fittizia",
+  "description": "Client di test per collaudo tecnico - Azienda privata aggregata",
+  "enabled": true,
+  "protocol": "saml",
+  "attributes": {
+    "saml.force.post.binding": "false",
+    "saml.server.signature": "true",
+    "saml.encrypt": "false",
+    "saml.authnstatement": "true",
+    "saml.signature.algorithm": "RSA_SHA256",
+    
+    "spid.organizationNames": "it|Azienda Aggregata Fittizia S.r.l.",
+    "spid.organizationDisplayNames": "it|Azienda Aggregata Fittizia",
+    "spid.organizationUrls": "it|https://azienda-fittizia.example.com",
+    
+    "spid.attributeConsumingServiceIndex": "0",
+    "spid.attributeConsumingServiceName": "default",
+    
+    "spid.isCollaudo": "true",
+    
+    "spid.aggregated.company": "Azienda Aggregata Fittizia S.r.l.",
+    "spid.aggregated.ipaCode": "",
+    "spid.aggregated.isPrivate": "true",
+    "spid.aggregated.vatNumber": "IT12345678901",
+    "spid.aggregated.fiscalCode": "AZFITT12345678901",
+    
+    "spid.requestedAttributes": "familyName,name,spidCode,fiscalNumber,email"
+  },
+  "defaultClientScopes": [
+    "role_list",
+    "profile",
+    "email",
+    "roles",
+    "web-origins",
+    "saml"
+  ],
+  "fullScopeAllowed": true,
+  "redirectUris": [
+    "https://azienda-fittizia.example.com/*"
+  ],
+  "webOrigins": [
+    "https://azienda-fittizia.example.com"
+  ]
+}

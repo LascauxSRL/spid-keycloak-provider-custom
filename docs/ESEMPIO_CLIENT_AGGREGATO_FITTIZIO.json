@@ -1,0 +1,150 @@
+{
+  "clientId": "soggetto-aggregato-fittizio",
+  "name": "Soggetto Aggregato Fittizio per Collaudo",
+  "description": "Client di test per collaudo tecnico come soggetto aggregatore in modalità full",
+  "enabled": true,
+  "protocol": "saml",
+  "attributes": {
+    "saml.force.post.binding": "false",
+    "saml.artifact.binding": "false",
+    "saml.server.signature": "true",
+    "saml.server.signature.keyinfo.ext": "false",
+    "saml.force.name.id.format": "false",
+    "saml.multivalued.roles": "false",
+    "saml.encrypt": "false",
+    "saml.client.signature": "false",
+    "saml.authnstatement": "true",
+    "saml.onetimeuse.condition": "false",
+    "saml_force_name_id_format": "false",
+    "saml.signature.algorithm": "RSA_SHA256",
+    "saml_single_logout_service_url_post": "",
+    "saml_single_logout_service_url_redirect": "",
+    "saml_assertion_consumer_url_post": "",
+    "saml_assertion_consumer_url_redirect": "",
+    "saml_force_post_binding": "false",
+    "saml.signature.canonicalization.method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+    
+    "spid.entityId": "https://soggetto-fittizio.example.com/spid",
+    
+    "spid.organizationNames": "it|Soggetto Aggregato Fittizio S.r.l.",
+    "spid.organizationDisplayNames": "it|Soggetto Fittizio",
+    "spid.organizationUrls": "it|https://soggetto-fittizio.example.com",
+    
+    "spid.attributeConsumingServiceIndex": "0",
+    "spid.attributeConsumingServiceName": "default",
+    
+    "spid.contact.other.isSpPrivate": "false",
+    "spid.contact.other.ipaCode": "c_test001",
+    "spid.contact.other.company": "Soggetto Aggregato Fittizio S.r.l.",
+    "spid.contact.other.email": "contatto@soggetto-fittizio.example.com",
+    "spid.contact.other.phone": "+39 02 12345678",
+    
+    "spid.contact.billing.company": "Soggetto Aggregato Fittizio S.r.l.",
+    "spid.contact.billing.email": "fatturazione@soggetto-fittizio.example.com",
+    "spid.contact.billing.phone": "+39 02 12345679",
+    "spid.contact.billing.registryName": "Soggetto Aggregato Fittizio S.r.l.",
+    "spid.contact.billing.siteAddress": "Via di Test, 123",
+    "spid.contact.billing.siteNumber": "123",
+    "spid.contact.billing.siteCity": "Milano",
+    "spid.contact.billing.siteZipCode": "20100",
+    "spid.contact.billing.siteProvince": "MI",
+    "spid.contact.billing.siteCountry": "IT",
+    
+    "spid.aggregated.company": "Comune Fittizio",
+    "spid.aggregated.ipaCode": "c_fittizio",
+    "spid.aggregated.isPrivate": "false",
+    
+    "spid.requestedAttributes": "familyName,name,spidCode,fiscalNumber,email,dateOfBirth"
+  },
+  "defaultClientScopes": [
+    "role_list",
+    "profile",
+    "email",
+    "roles",
+    "web-origins",
+    "saml"
+  ],
+  "optionalClientScopes": [],
+  "redirectUris": [
+    "https://soggetto-fittizio.example.com/*"
+  ],
+  "webOrigins": [
+    "https://soggetto-fittizio.example.com"
+  ],
+  "fullScopeAllowed": true,
+  "nodeReRegistrationTimeout": -1,
+  "protocolMappers": [
+    {
+      "name": "familyName",
+      "protocol": "saml",
+      "protocolMapper": "saml-user-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "lastName",
+        "friendly.name": "familyName",
+        "attribute.nameformat": "Basic",
+        "attribute.name": "familyName"
+      }
+    },
+    {
+      "name": "name",
+      "protocol": "saml",
+      "protocolMapper": "saml-user-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "firstName",
+        "friendly.name": "name",
+        "attribute.nameformat": "Basic",
+        "attribute.name": "name"
+      }
+    },
+    {
+      "name": "spidCode",
+      "protocol": "saml",
+      "protocolMapper": "saml-user-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "username",
+        "friendly.name": "spidCode",
+        "attribute.nameformat": "Basic",
+        "attribute.name": "spidCode"
+      }
+    },
+    {
+      "name": "fiscalNumber",
+      "protocol": "saml",
+      "protocolMapper": "saml-user-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "fiscalNumber",
+        "friendly.name": "fiscalNumber",
+        "attribute.nameformat": "Basic",
+        "attribute.name": "fiscalNumber"
+      }
+    },
+    {
+      "name": "email",
+      "protocol": "saml",
+      "protocolMapper": "saml-user-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "email",
+        "friendly.name": "email",
+        "attribute.nameformat": "Basic",
+        "attribute.name": "email"
+      }
+    },
+    {
+      "name": "dateOfBirth",
+      "protocol": "saml",
+      "protocolMapper": "saml-user-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "birthdate",
+        "friendly.name": "dateOfBirth",
+        "attribute.nameformat": "Basic",
+        "attribute.name": "dateOfBirth"
+      }
+    }
+  ]
+}

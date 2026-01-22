@@ -1,0 +1,49 @@
+{
+  "clientId": "azienda-privata-aggregata-fittizia-oidc",
+  "name": "Azienda Privata Aggregata Fittizia (OIDC)",
+  "description": "Client OpenID Connect di test per collaudo tecnico - Azienda privata aggregata",
+  "enabled": true,
+  "protocol": "openid-connect",
+  "publicClient": false,
+  "standardFlowEnabled": true,
+  "implicitFlowEnabled": false,
+  "directAccessGrantsEnabled": true,
+  "serviceAccountsEnabled": false,
+  "attributes": {
+    "spid.organizationNames": "it|Azienda Aggregata Fittizia S.r.l.",
+    "spid.organizationDisplayNames": "it|Azienda Aggregata Fittizia",
+    "spid.organizationUrls": "it|https://azienda-fittizia.example.com",
+    
+    "spid.isCollaudo": "true",
+    
+    "spid.aggregated.company": "Azienda Aggregata Fittizia S.r.l.",
+    "spid.aggregated.ipaCode": "",
+    "spid.aggregated.isPrivate": "true",
+    "spid.aggregated.vatNumber": "IT12345678901",
+    "spid.aggregated.fiscalCode": "AZFITT12345678901"
+  },
+  "defaultClientScopes": [
+    "openid",
+    "profile",
+    "email",
+    "roles",
+    "web-origins",
+    "microprofile-jwt"
+  ],
+  "optionalClientScopes": [
+    "address",
+    "phone",
+    "offline_access"
+  ],
+  "fullScopeAllowed": true,
+  "redirectUris": [
+    "https://azienda-fittizia.example.com/*",
+    "http://localhost:3000/*"
+  ],
+  "webOrigins": [
+    "https://azienda-fittizia.example.com",
+    "http://localhost:3000"
+  ],
+  "baseUrl": "https://azienda-fittizia.example.com",
+  "adminUrl": "https://azienda-fittizia.example.com"
+}

@@ -1,0 +1,44 @@
+{
+  "clientId": "ente-pubblico-aggregato-fittizio",
+  "name": "Ente Pubblico Aggregato Fittizio",
+  "description": "Client di test per collaudo tecnico - Ente pubblico aggregato (conforme Avviso SPID n°22 v3.0)",
+  "enabled": true,
+  "protocol": "saml",
+  "attributes": {
+    "saml.force.post.binding": "false",
+    "saml.server.signature": "true",
+    "saml.encrypt": "false",
+    "saml.authnstatement": "true",
+    "saml.signature.algorithm": "RSA_SHA256",
+    
+    "spid.organizationNames": "it|Organizzazione fittizia per il collaudo",
+    "spid.organizationDisplayNames": "it|Organizzazione fittizia per il collaudo",
+    "spid.organizationUrls": "it|https://ente-fittizio.example.com",
+    
+    "spid.attributeConsumingServiceIndex": "0",
+    "spid.attributeConsumingServiceName": "default",
+    
+    "spid.isCollaudo": "true",
+    
+    "spid.aggregated.company": "Organizzazione fittizia per il collaudo",
+    "spid.aggregated.ipaCode": "__aggrsint",
+    "spid.aggregated.isPrivate": "false",
+    
+    "spid.requestedAttributes": "familyName,name,spidCode,fiscalNumber,email,dateOfBirth,placeOfBirth,address"
+  },
+  "defaultClientScopes": [
+    "role_list",
+    "profile",
+    "email",
+    "roles",
+    "web-origins",
+    "saml"
+  ],
+  "fullScopeAllowed": true,
+  "redirectUris": [
+    "https://ente-fittizio.example.com/*"
+  ],
+  "webOrigins": [
+    "https://ente-fittizio.example.com"
+  ]
+}

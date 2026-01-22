@@ -25,6 +25,11 @@ import org.keycloak.broker.provider.IdentityProviderDataMarshaller;
 import org.keycloak.broker.provider.IdentityProviderMapper;
 import org.keycloak.broker.provider.util.SimpleHttp;
 import org.keycloak.broker.saml.SAMLDataMarshaller;
+import org.keycloak.broker.saml.SAMLIdentityProviderConfig;
+import org.keycloak.broker.spid.metadata.SpidClientConfig;
+import org.keycloak.broker.spid.metadata.SpidSpMetadataResourceProviderFactory;
+import org.keycloak.broker.spid.signature.JaxrsSAML2BindingBuilderCustom;
+import org.keycloak.broker.spid.signature.SAML2SignatureCustom;
 import org.keycloak.common.util.PemUtils;
 import org.keycloak.crypto.Algorithm;
 import org.keycloak.crypto.KeyStatus;
@@ -42,12 +47,7 @@ import org.keycloak.dom.saml.v2.protocol.AuthnRequestType;
 import org.keycloak.dom.saml.v2.protocol.LogoutRequestType;
 import org.keycloak.dom.saml.v2.protocol.ResponseType;
 import org.keycloak.events.EventBuilder;
-import org.keycloak.models.FederatedIdentityModel;
-import org.keycloak.models.IdentityProviderMapperModel;
-import org.keycloak.models.KeyManager;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.UserSessionModel;
+import org.keycloak.models.*;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.saml.JaxrsSAML2BindingBuilder;
 import org.keycloak.protocol.saml.SamlProtocol;
@@ -91,13 +91,10 @@ import javax.xml.stream.XMLStreamWriter;
 import java.io.StringWriter;
 import java.net.URI;
 import java.security.KeyPair;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * @author Pedro Igor
@@ -106,6 +103,14 @@ public class SpidIdentityProvider extends AbstractIdentityProvider<SpidIdentityP
     protected static final Logger logger = Logger.getLogger(SpidIdentityProvider.class);
 
     public static final String SPID_REQUEST_ISSUE_INSTANT = "SPID_REQUEST_ISSUE_INSTANT";
+
+    private static final String IDP_PROVIDER_POSTE = "https://posteid.poste.it";
+    private static final String IDP_PROVIDER_TEAMSYSTEM = "https://spid.teamsystem.com/idp";
+    private static final String IDP_PROVIDER_ETNAID = "https://id.eht.eu";
+    private static final String IDP_PROVIDER_SIELTE = "https://identity.sieltecloud.it";
+    private static final List<String> CUSTOM_ASSERTION_IDPS = List.of(
+            IDP_PROVIDER_POSTE
+    );
 
     private final DestinationValidator destinationValidator;
 
@@ -124,12 +129,69 @@ public class SpidIdentityProvider extends AbstractIdentityProvider<SpidIdentityP
         try {
             UriInfo uriInfo = request.getUriInfo();
             RealmModel realm = request.getRealm();
-            String issuerURL = getEntityId(uriInfo, realm);
+            AuthenticationSessionModel authSession = request.getAuthenticationSession();
+            
+            // Check if client is configured as aggregator and get client-specific entityId
+            String issuerURL = null;
+            Integer attributeConsumingServiceIndex = null;
+            
+            if (authSession != null && authSession.getClient() != null) {
+                SpidClientConfig clientConfig = SpidClientConfig.from(authSession.getClient());
+                
+                // Check if client is configured as aggregator (has aggregated entity configuration)
+                if (clientConfig.isSpidConfigured()) {
+                    // Check if client has aggregated entity configuration
+                    String aggregatedCompany = clientConfig.getAggregatedCompany();
+                    String aggregatedIpaCode = clientConfig.getAggregatedIpaCode();
+                    String aggregatedVatNumber = clientConfig.getAggregatedVatNumber();
+                    boolean hasAggregatedConfig = (aggregatedCompany != null && !aggregatedCompany.isEmpty()) ||
+                                                  (aggregatedIpaCode != null && !aggregatedIpaCode.isEmpty()) ||
+                                                  (aggregatedVatNumber != null && !aggregatedVatNumber.isEmpty());
+                    
+                    if (hasAggregatedConfig) {
+                        // Generate client-specific entityId from metadata URL
+                        boolean isPrivate = clientConfig.isAggregatedPrivate();
+                        String pathSegment = isPrivate ? "priv-ag-full" : "pub-ag-full";
+                        issuerURL = UriBuilder.fromUri(uriInfo.getBaseUri())
+                            .path("realms").path(realm.getName())
+                            .path(SpidSpMetadataResourceProviderFactory.ID)
+                            .path(pathSegment)
+                            .path("clients")
+                            .path(authSession.getClient().getClientId())
+                            .build().toString();
+                        
+                        logger.debugf("Using client-specific entityId for aggregator: %s", issuerURL);
+                        
+                        // Get AttributeConsumingServiceIndex from client configuration
+                        attributeConsumingServiceIndex = clientConfig.getAttributeConsumingServiceIndex();
+                        if (attributeConsumingServiceIndex == null) {
+                            attributeConsumingServiceIndex = 0; // Default for aggregated clients
+                        }
+                        logger.debugf("Using client-specific AttributeConsumingServiceIndex: %d", attributeConsumingServiceIndex);
+                    }
+                }
+            }
+            
+            // Fallback to identity provider entityId if client is not configured as aggregator
+            if (issuerURL == null) {
+                issuerURL = getEntityId(uriInfo, realm);
+            }
+            
+            // Fallback to identity provider configuration for AttributeConsumingServiceIndex if not set
+            if (attributeConsumingServiceIndex == null) {
+                attributeConsumingServiceIndex = getConfig().getAttributeConsumingServiceIndex();
+            }
+            
             String destinationUrl = getConfig().getSingleSignOnServiceUrl();
             String nameIDPolicyFormat = getConfig().getNameIDPolicyFormat();
 
-            if (nameIDPolicyFormat == null) {
-                nameIDPolicyFormat =  JBossSAMLURIConstants.NAMEID_FORMAT_PERSISTENT.get();
+            // For aggregator clients, always use transient format
+            boolean isClientAggregator = (issuerURL != null && issuerURL.contains("/spid-sp-metadata/"));
+            if (isClientAggregator) {
+                nameIDPolicyFormat = JBossSAMLURIConstants.NAMEID_FORMAT_TRANSIENT.get();
+                logger.debugf("Using transient NameIDPolicy format for aggregator client");
+            } else if (nameIDPolicyFormat == null) {
+                nameIDPolicyFormat = JBossSAMLURIConstants.NAMEID_FORMAT_PERSISTENT.get();
             }
 
             String protocolBinding = JBossSAMLURIConstants.SAML_HTTP_REDIRECT_BINDING.get();
@@ -150,15 +212,37 @@ public class SpidIdentityProvider extends AbstractIdentityProvider<SpidIdentityP
             for (String authnContextDeclRef : getAuthnContextDeclRefUris())
                 requestedAuthnContext.addAuthnContextDeclRef(authnContextDeclRef);
 
-            Integer attributeConsumingServiceIndex = getConfig().getAttributeConsumingServiceIndex();
-
             String loginHint = getConfig().isLoginHint() ? request.getAuthenticationSession().getClientNote(OIDCLoginProtocol.LOGIN_HINT_PARAM) : null;
             Boolean allowCreate = null;
             if (getConfig().getConfig().get(SpidIdentityProviderConfig.ALLOW_CREATE) == null || getConfig().isAllowCreate())
                 allowCreate = Boolean.TRUE;
+
+            boolean destinationUrlEdited = false;
+            String authRequestDestinationUrl = destinationUrl;
+            if (authRequestDestinationUrl != null) {
+                if (authRequestDestinationUrl.startsWith(IDP_PROVIDER_POSTE)) {
+                    authRequestDestinationUrl = IDP_PROVIDER_POSTE;
+                    destinationUrlEdited = true;
+                } else if (authRequestDestinationUrl.startsWith(IDP_PROVIDER_SIELTE)) {
+                    authRequestDestinationUrl = IDP_PROVIDER_SIELTE;
+                    destinationUrlEdited = true;
+                } else if (authRequestDestinationUrl.startsWith(IDP_PROVIDER_TEAMSYSTEM)) {
+                    authRequestDestinationUrl = IDP_PROVIDER_TEAMSYSTEM;
+                    destinationUrlEdited = true;
+                }  else if (authRequestDestinationUrl.startsWith(IDP_PROVIDER_ETNAID)) {
+                    authRequestDestinationUrl = IDP_PROVIDER_ETNAID;
+                    destinationUrlEdited = true;
+                }
+            }
+
+            if (destinationUrlEdited) {
+                logger.info("Changed Location in " + authRequestDestinationUrl
+                        + " from " + destinationUrl);
+            }
+
             SAML2AuthnRequestBuilder authnRequestBuilder = new SAML2AuthnRequestBuilder()
                     .assertionConsumerUrl(assertionConsumerServiceUrl)
-                    .destination(destinationUrl)
+                    .destination(authRequestDestinationUrl)
                     .issuer(SAML2NameIDBuilder.value(issuerURL)
                         // SPID: Aggiungi l'attributo NameQualifier all'elemento Issuer
                         .setNameQualifier(issuerURL)
@@ -176,7 +260,7 @@ public class SpidIdentityProvider extends AbstractIdentityProvider<SpidIdentityP
                     .requestedAuthnContext(requestedAuthnContext)
                     .subject(loginHint);
 
-            JaxrsSAML2BindingBuilder binding = new JaxrsSAML2BindingBuilder(session)
+            JaxrsSAML2BindingBuilderCustom binding = new JaxrsSAML2BindingBuilderCustom(session)
                     .relayState(request.getState().getEncoded());
             boolean postBinding = getConfig().isPostBindingAuthnRequest();
 
@@ -197,8 +281,44 @@ public class SpidIdentityProvider extends AbstractIdentityProvider<SpidIdentityP
                 authnRequest = it.next().beforeSendingLoginRequest(authnRequest, request.getAuthenticationSession());
             }
 
-            if (authnRequest.getDestination() != null) {
+            if (authnRequest.getDestination() != null && !destinationUrlEdited) {
                 destinationUrl = authnRequest.getDestination().toString();
+            }
+
+            if (CUSTOM_ASSERTION_IDPS.contains(getConfig().getIdpEntityId())) {
+                // Retrieve all enabled SPID Identity Providers for this realms
+                List<IdentityProviderModel> lstSpidIdentityProviders = realm.getIdentityProvidersStream()
+                        .filter(t -> t.getProviderId().equals(SpidIdentityProviderFactory.PROVIDER_ID) &&
+                                t.isEnabled())
+                        .sorted(Comparator.comparing(IdentityProviderModel::getAlias))
+                        .collect(Collectors.toList());
+                if (!lstSpidIdentityProviders.isEmpty()) {
+                    logger.info("Found " + lstSpidIdentityProviders.size() + " SPID Identity Providers for realm " + realm.getName());
+                    OptionalInt indexOpt = IntStream.range(0, lstSpidIdentityProviders.size())
+                            .filter(i -> {
+                                // Create an instance of the current SPID Identity Provider
+                                SpidIdentityProviderFactory providerFactory = new SpidIdentityProviderFactory();
+                                SpidIdentityProvider firstSpidProvider = providerFactory.create(session,
+                                        lstSpidIdentityProviders.get(i));
+                                logger.info("Checking SPID Identity Provider " + firstSpidProvider
+                                        .getConfig()
+                                        .getIdpEntityId());
+                                return firstSpidProvider
+                                        .getConfig()
+                                        .getIdpEntityId() != null && firstSpidProvider
+                                        .getConfig()
+                                        .getIdpEntityId()
+                                        .equals(getConfig().getIdpEntityId());
+                            })
+                            .findFirst();
+                    if (indexOpt.isPresent()) {
+                        // Il provider vuole solamente index valorizzato
+                        logger.info("Setting index " + indexOpt.getAsInt() + " for SPID Identity Provider");
+                        authnRequest.setAssertionConsumerServiceIndex(indexOpt.getAsInt());
+                        authnRequest.setAssertionConsumerServiceURL(null);
+                        authnRequest.setProtocolBinding(null);
+                    }
+                }
             }
 
             // Save the current RequestID in the Auth Session as we need to verify it against the ID returned from the IdP
@@ -466,7 +586,7 @@ public class SpidIdentityProvider extends AbstractIdentityProvider<SpidIdentityP
                 KeyPair keyPair = new KeyPair(activeKey.getPublicKey(), activeKey.getPrivateKey());
 
                 Document metadataDocument = DocumentUtil.getDocument(descriptor);
-                SAML2Signature signatureHelper = new SAML2Signature();
+                SAML2SignatureCustom signatureHelper = new SAML2SignatureCustom();
                 signatureHelper.setSignatureMethod(getSignatureAlgorithm().getXmlSignatureMethod());
                 signatureHelper.setDigestMethod(getSignatureAlgorithm().getXmlSignatureDigestMethod());
 

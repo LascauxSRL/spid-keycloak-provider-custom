@@ -1,0 +1,144 @@
+{
+  "clientId": "soggetto-aggregato-fittizio-completo",
+  "name": "Soggetto Aggregato Fittizio - Configurazione Completa",
+  "description": "Client di test con tutti gli attributi configurati per collaudo tecnico completo",
+  "enabled": true,
+  "protocol": "saml",
+  "attributes": {
+    "saml.force.post.binding": "false",
+    "saml.artifact.binding": "false",
+    "saml.server.signature": "true",
+    "saml.server.signature.keyinfo.ext": "false",
+    "saml.force.name.id.format": "false",
+    "saml.multivalued.roles": "false",
+    "saml.encrypt": "false",
+    "saml.client.signature": "false",
+    "saml.authnstatement": "true",
+    "saml.onetimeuse.condition": "false",
+    "saml_force_name_id_format": "false",
+    "saml.signature.algorithm": "RSA_SHA256",
+    "saml.signature.canonicalization.method": "http://www.w3.org/2001/10/xml-exc-c14n#",
+    
+    "spid.entityId": "https://soggetto-fittizio-completo.example.com/spid",
+    
+    "spid.organizationNames": "it|Soggetto Aggregato Fittizio Completo S.r.l.|en|Fictitious Aggregated Subject Complete Ltd.",
+    "spid.organizationDisplayNames": "it|Soggetto Fittizio Completo|en|Fictitious Subject Complete",
+    "spid.organizationUrls": "it|https://soggetto-fittizio-completo.example.com|en|https://soggetto-fittizio-completo.example.com/en",
+    
+    "spid.attributeConsumingServiceIndex": "0",
+    "spid.attributeConsumingServiceName": "default",
+    
+    "spid.contact.other.isSpPrivate": "false",
+    "spid.contact.other.ipaCode": "c_testcompleto",
+    "spid.contact.other.company": "Soggetto Aggregato Fittizio Completo S.r.l.",
+    "spid.contact.other.email": "contatto@soggetto-fittizio-completo.example.com",
+    "spid.contact.other.phone": "+39 02 12345678",
+    
+    "spid.contact.billing.company": "Soggetto Aggregato Fittizio Completo S.r.l.",
+    "spid.contact.billing.email": "fatturazione@soggetto-fittizio-completo.example.com",
+    "spid.contact.billing.phone": "+39 02 12345679",
+    "spid.contact.billing.registryName": "Soggetto Aggregato Fittizio Completo S.r.l.",
+    "spid.contact.billing.siteAddress": "Via di Test Completo",
+    "spid.contact.billing.siteNumber": "456",
+    "spid.contact.billing.siteCity": "Roma",
+    "spid.contact.billing.siteZipCode": "00100",
+    "spid.contact.billing.siteProvince": "RM",
+    "spid.contact.billing.siteCountry": "IT",
+    
+    "spid.aggregated.company": "Comune Aggregato Fittizio Completo",
+    "spid.aggregated.ipaCode": "c_aggcompleto",
+    "spid.aggregated.isPrivate": "false",
+    
+    "spid.requestedAttributes": "familyName,name,spidCode,fiscalNumber,email,dateOfBirth,placeOfBirth,address,gender,mobilePhone"
+  },
+  "defaultClientScopes": [
+    "role_list",
+    "profile",
+    "email",
+    "roles",
+    "web-origins",
+    "saml"
+  ],
+  "fullScopeAllowed": true,
+  "redirectUris": [
+    "https://soggetto-fittizio-completo.example.com/*",
+    "https://soggetto-fittizio-completo.example.com/saml/acs"
+  ],
+  "webOrigins": [
+    "https://soggetto-fittizio-completo.example.com"
+  ],
+  "protocolMappers": [
+    {
+      "name": "familyName",
+      "protocol": "saml",
+      "protocolMapper": "saml-user-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "lastName",
+        "friendly.name": "familyName",
+        "attribute.nameformat": "Basic",
+        "attribute.name": "familyName"
+      }
+    },
+    {
+      "name": "name",
+      "protocol": "saml",
+      "protocolMapper": "saml-user-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "firstName",
+        "friendly.name": "name",
+        "attribute.nameformat": "Basic",
+        "attribute.name": "name"
+      }
+    },
+    {
+      "name": "spidCode",
+      "protocol": "saml",
+      "protocolMapper": "saml-user-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "username",
+        "friendly.name": "spidCode",
+        "attribute.nameformat": "Basic",
+        "attribute.name": "spidCode"
+      }
+    },
+    {
+      "name": "fiscalNumber",
+      "protocol": "saml",
+      "protocolMapper": "saml-user-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "fiscalNumber",
+        "friendly.name": "fiscalNumber",
+        "attribute.nameformat": "Basic",
+        "attribute.name": "fiscalNumber"
+      }
+    },
+    {
+      "name": "email",
+      "protocol": "saml",
+      "protocolMapper": "saml-user-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "email",
+        "friendly.name": "email",
+        "attribute.nameformat": "Basic",
+        "attribute.name": "email"
+      }
+    },
+    {
+      "name": "dateOfBirth",
+      "protocol": "saml",
+      "protocolMapper": "saml-user-property-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "birthdate",
+        "friendly.name": "dateOfBirth",
+        "attribute.nameformat": "Basic",
+        "attribute.name": "dateOfBirth"
+      }
+    }
+  ]
+}
