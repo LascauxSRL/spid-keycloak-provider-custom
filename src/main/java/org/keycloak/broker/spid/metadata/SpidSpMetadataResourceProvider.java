@@ -799,40 +799,52 @@ public class SpidSpMetadataResourceProvider implements RealmResourceProvider {
             entityId, nameIDPolicyFormat, signingKeys, encryptionKeys);
         
         // Create AttributeConsumingService(s)
-        // Check if multiple services are configured via JSON
-        String attributeConsumingServicesJson = clientConfig.getAttributeConsumingServices();
         List<AttributeConsumingServiceType> attributeConsumingServices = new LinkedList<>();
-        
-        if (attributeConsumingServicesJson != null && !attributeConsumingServicesJson.trim().isEmpty()) {
-            // Parse JSON array of AttributeConsumingService configurations
-            try {
-                AttributeConsumingServiceConfig[] servicesConfig = JsonSerialization.readValue(
-                    attributeConsumingServicesJson, 
-                    AttributeConsumingServiceConfig[].class
-                );
-                
-                for (AttributeConsumingServiceConfig serviceConfig : servicesConfig) {
-                    AttributeConsumingServiceType service = createAttributeConsumingService(
-                        serviceConfig, realm
+
+        // If the client is marked as test-only, expose only a single default
+        // AttributeConsumingService instead of the full set.
+        if (clientConfig.isTestClient()) {
+            AttributeConsumingServiceType service = createSingleAttributeConsumingService(
+                    attributeConsumingServiceIndex,
+                    attributeConsumingServiceNames,
+                    clientConfig,
+                    realm);
+            attributeConsumingServices.add(service);
+        } else {
+            // Standard behaviour: possibly multiple services via JSON or defaults
+            String attributeConsumingServicesJson = clientConfig.getAttributeConsumingServices();
+
+            if (attributeConsumingServicesJson != null && !attributeConsumingServicesJson.trim().isEmpty()) {
+                // Parse JSON array of AttributeConsumingService configurations
+                try {
+                    AttributeConsumingServiceConfig[] servicesConfig = JsonSerialization.readValue(
+                        attributeConsumingServicesJson, 
+                        AttributeConsumingServiceConfig[].class
                     );
-                    attributeConsumingServices.add(service);
+                    
+                    for (AttributeConsumingServiceConfig serviceConfig : servicesConfig) {
+                        AttributeConsumingServiceType service = createAttributeConsumingService(
+                            serviceConfig, realm
+                        );
+                        attributeConsumingServices.add(service);
+                    }
+                } catch (Exception e) {
+                    logger.warnf("Failed to parse spid.attributeConsumingServices JSON: %s", e.getMessage());
+                    // Fall back to all default services
+                    List<AttributeConsumingServiceConfig> defaultServices = DefaultAttributeConsumingServices.getAllDefaultServices();
+                    for (AttributeConsumingServiceConfig serviceConfig : defaultServices) {
+                        AttributeConsumingServiceType service = createAttributeConsumingService(serviceConfig, realm);
+                        attributeConsumingServices.add(service);
+                    }
                 }
-            } catch (Exception e) {
-                logger.warnf("Failed to parse spid.attributeConsumingServices JSON: %s", e.getMessage());
-                // Fall back to all default services
+            } else {
+                // Use all default AttributeConsumingServices (index 0-30, 99-100)
+                // This ensures all possible service combinations are available in metadata
                 List<AttributeConsumingServiceConfig> defaultServices = DefaultAttributeConsumingServices.getAllDefaultServices();
                 for (AttributeConsumingServiceConfig serviceConfig : defaultServices) {
                     AttributeConsumingServiceType service = createAttributeConsumingService(serviceConfig, realm);
                     attributeConsumingServices.add(service);
                 }
-            }
-        } else {
-            // Use all default AttributeConsumingServices (index 0-30, 99-100)
-            // This ensures all possible service combinations are available in metadata
-            List<AttributeConsumingServiceConfig> defaultServices = DefaultAttributeConsumingServices.getAllDefaultServices();
-            for (AttributeConsumingServiceConfig serviceConfig : defaultServices) {
-                AttributeConsumingServiceType service = createAttributeConsumingService(serviceConfig, realm);
-                attributeConsumingServices.add(service);
             }
         }
     

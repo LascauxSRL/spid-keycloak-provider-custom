@@ -15,6 +15,7 @@
     "spid.organizationUrls": "it|https://ente-fittizio.example.com",
     
     "spid.isCollaudo": "true",
+    "spid.isTestClient": "true",
     
     "spid.aggregated.company": "Organizzazione fittizia per il collaudo",
     "spid.aggregated.ipaCode": "__aggrsint",

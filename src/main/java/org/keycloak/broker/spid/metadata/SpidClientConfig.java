@@ -39,6 +39,7 @@ public class SpidClientConfig {
     public static final String SPID_AGGREGATED_VAT_NUMBER = "spid.aggregated.vatNumber";
     public static final String SPID_AGGREGATED_FISCAL_CODE = "spid.aggregated.fiscalCode";
     public static final String SPID_IS_COLLAUDO = "spid.isCollaudo";
+    public static final String SPID_IS_TEST_CLIENT = "spid.isTestClient";
     
     // Contact OTHER attributes
     public static final String SPID_CONTACT_OTHER_SP_PRIVATE = "spid.contact.other.isSpPrivate";
@@ -184,6 +185,16 @@ public class SpidClientConfig {
     
     public boolean isCollaudo() {
         String value = client.getAttribute(SPID_IS_COLLAUDO);
+        return Boolean.parseBoolean(value);
+    }
+
+    /**
+     * Indicates whether this client is a test-only SPID client.
+     * When true, metadata generation will expose only a single
+     * default AttributeConsumingService instead of the full set.
+     */
+    public boolean isTestClient() {
+        String value = client.getAttribute(SPID_IS_TEST_CLIENT);
         return Boolean.parseBoolean(value);
     }
     
