@@ -114,6 +114,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.keycloak.broker.spid.metadata.SpidClientConfig;
 import org.keycloak.broker.spid.metadata.SpidSpMetadataResourceProviderFactory;
+import org.keycloak.broker.spid.SpidLogoutEndpointResourceProviderFactory;
 
 import java.net.URI;
 import java.security.cert.CertificateException;
@@ -715,7 +716,31 @@ public class SpidSAMLEndpoint {
                 event.error(Errors.INVALID_SAML_LOGOUT_RESPONSE);
                 return ErrorPage.error(session, null, Response.Status.BAD_REQUEST, Messages.INVALID_REQUEST);
             }
-            if (! destinationValidator.validate(getExpectedDestination(config.getAlias(), clientId), statusResponse.getDestination())) {
+            
+            // Check if the destination is the generic logout endpoint
+            // Only accept it for LogoutResponse, not for login ResponseType
+            // This ensures login responses still use IdP-specific endpoints
+            String actualDestination = statusResponse.getDestination();
+            String expectedDestination = getExpectedDestination(config.getAlias(), clientId);
+            String genericLogoutEndpoint = session.getContext().getUri().getBaseUriBuilder()
+                .path("realms").path(realm.getName())
+                .path(SpidLogoutEndpointResourceProviderFactory.ID)
+                .path("endpoint")
+                .build()
+                .toString();
+            
+            boolean destinationValid = false;
+            // Only accept generic logout endpoint for LogoutResponse (not for login ResponseType)
+            boolean isLogoutResponse = !(statusResponse instanceof ResponseType);
+            if (isLogoutResponse && actualDestination != null && actualDestination.equals(genericLogoutEndpoint)) {
+                // Accept the generic logout endpoint as valid for logout responses only
+                destinationValid = true;
+            } else {
+                // Use standard validation for all other cases (login responses or non-generic destinations)
+                destinationValid = destinationValidator.validate(expectedDestination, actualDestination);
+            }
+            
+            if (!destinationValid) {
                 event.event(EventType.IDENTITY_PROVIDER_RESPONSE);
                 event.detail(Details.REASON, Errors.INVALID_DESTINATION);
                 event.error(Errors.INVALID_SAML_RESPONSE);

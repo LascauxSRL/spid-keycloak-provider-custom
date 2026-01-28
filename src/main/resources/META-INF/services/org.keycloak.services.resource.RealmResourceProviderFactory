@@ -1,1 +1,2 @@
 org.keycloak.broker.spid.metadata.SpidSpMetadataResourceProviderFactory
+org.keycloak.broker.spid.SpidLogoutEndpointResourceProviderFactory

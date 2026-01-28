@@ -60,6 +60,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -85,6 +86,7 @@ import org.w3c.dom.Node;
 import org.keycloak.broker.provider.IdentityProviderMapper;
 import org.keycloak.broker.spid.SpidIdentityProvider;
 import org.keycloak.broker.spid.SpidIdentityProviderFactory;
+import org.keycloak.broker.spid.SpidLogoutEndpointResourceProviderFactory;
 
 public class SpidSpMetadataResourceProvider implements RealmResourceProvider {
     protected static final Logger logger = Logger.getLogger(SpidSpMetadataResourceProvider.class);
@@ -307,13 +309,16 @@ public class SpidSpMetadataResourceProvider implements RealmResourceProvider {
                         .path("endpoint")
                     .build()).collect(Collectors.toList());
 
-            List<URI> logoutEndpoints = lstSpidIdentityProviders.stream()
-                .map(t -> uriInfo.getBaseUriBuilder()
+            // Use generic logout endpoint that selects the correct IdP configuration at runtime
+            // based on the Issuer in the logout request/response
+            List<URI> logoutEndpoints = Collections.singletonList(
+                uriInfo.getBaseUriBuilder()
                     .path("realms").path(realm.getName())
-                    .path("broker")
-                    .path(t.getAlias())
+                    .path(SpidLogoutEndpointResourceProviderFactory.ID)
                     .path("endpoint")
-                    .build()).collect(Collectors.toList());
+                    .build()
+            );
+            logger.debugf("Using generic logout endpoint for aggregated metadata: %s", logoutEndpoints.get(0));
 
             for (EntityDescriptorType.EDTChoiceType choiceType: entityDescriptor.getChoiceType()) {
                 List<EntityDescriptorType.EDTDescriptorChoiceType> descriptors = choiceType.getDescriptors();
@@ -909,20 +914,16 @@ public class SpidSpMetadataResourceProvider implements RealmResourceProvider {
                 })
                 .collect(Collectors.toList());
 
-        List<URI> logoutEndpoints = lstSpidIdentityProviders.stream()
-            .map(t -> {
-                URI logoutEndpoint = uriInfo.getBaseUriBuilder()
-                    .path("realms").path(realm.getName())
-                    .path("broker")
-                    .path(t.getAlias())
-                    .path("endpoint")
-                    .path("clients")
-                    .path(client.getClientId())
-                    .build();
-                logger.debugf("Adding SingleLogoutService endpoint for IDP %s: %s", t.getAlias(), logoutEndpoint);
-                return logoutEndpoint;
-            })
-            .collect(Collectors.toList());
+        // Use generic logout endpoint that selects the correct IdP configuration at runtime
+        // based on the Issuer in the logout request/response
+        List<URI> logoutEndpoints = Collections.singletonList(
+            uriInfo.getBaseUriBuilder()
+                .path("realms").path(realm.getName())
+                .path(SpidLogoutEndpointResourceProviderFactory.ID)
+                .path("endpoint")
+                .build()
+        );
+        logger.debugf("Using generic logout endpoint for client %s: %s", client.getClientId(), logoutEndpoints.get(0));
 
         for (EntityDescriptorType.EDTChoiceType choiceType: entityDescriptor.getChoiceType()) {
             List<EntityDescriptorType.EDTDescriptorChoiceType> descriptors = choiceType.getDescriptors();
