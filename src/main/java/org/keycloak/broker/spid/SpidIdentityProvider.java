@@ -134,6 +134,7 @@ public class SpidIdentityProvider extends AbstractIdentityProvider<SpidIdentityP
             // Check if client is configured as aggregator and get client-specific entityId
             String issuerURL = null;
             Integer attributeConsumingServiceIndex = null;
+            boolean isAggregatedClient = false;
             
             if (authSession != null && authSession.getClient() != null) {
                 SpidClientConfig clientConfig = SpidClientConfig.from(authSession.getClient());
@@ -161,6 +162,7 @@ public class SpidIdentityProvider extends AbstractIdentityProvider<SpidIdentityP
                             .build().toString();
                         
                         logger.debugf("Using client-specific entityId for aggregator: %s", issuerURL);
+                        isAggregatedClient = true;
                         
                         // Get AttributeConsumingServiceIndex from client configuration
                         attributeConsumingServiceIndex = clientConfig.getAttributeConsumingServiceIndex();
@@ -197,6 +199,22 @@ public class SpidIdentityProvider extends AbstractIdentityProvider<SpidIdentityP
             String protocolBinding = JBossSAMLURIConstants.SAML_HTTP_REDIRECT_BINDING.get();
 
             String assertionConsumerServiceUrl = request.getRedirectUri();
+
+            // For aggregated clients, the AssertionConsumerServiceURL used in AuthnRequest
+            // must match the client-specific endpoint advertised in metadata:
+            //   /realms/{realm}/broker/{alias}/endpoint/clients/{clientId}
+            if (isAggregatedClient && authSession != null && authSession.getClient() != null) {
+                assertionConsumerServiceUrl = UriBuilder.fromUri(uriInfo.getBaseUri())
+                        .path("realms").path(realm.getName())
+                        .path("broker")
+                        .path(getConfig().getAlias())
+                        .path("endpoint")
+                        .path("clients")
+                        .path(authSession.getClient().getClientId())
+                        .build()
+                        .toString();
+                logger.debugf("Using client-specific AssertionConsumerServiceURL for aggregator client: %s", assertionConsumerServiceUrl);
+            }
 
             if (getConfig().isPostBindingResponse()) {
                 protocolBinding = JBossSAMLURIConstants.SAML_HTTP_POST_BINDING.get();

@@ -889,13 +889,11 @@ public class SpidSpMetadataResourceProvider implements RealmResourceProvider {
         addAggregatedContactPerson(entityDescriptor, clientConfig);
 
         // Additional SPSSODescriptor customizations
-        // Use the same logic as the original get() method: iterate over all SPID identity providers
-        // and add the client-specific path to each endpoint
-        // Log for debugging
+        // Use similar logic to the original get() method, but for client-specific metadata
+        // the endpoints must include the client path segment (/clients/{clientId})
+        // so that responses are sent to the dedicated client endpoint.
         logger.debugf("Found %d SPID identity providers for client %s", lstSpidIdentityProviders.size(), client.getClientId());
         
-        // For client-specific metadata, endpoints should be the same as aggregated metadata
-        // The clientId is handled via SAML request parameters, not in the endpoint URL
         List<URI> assertionEndpoints = lstSpidIdentityProviders.stream()
                 .map(t -> {
                     URI assertionEndpoint = uriInfo.getBaseUriBuilder()
@@ -903,6 +901,8 @@ public class SpidSpMetadataResourceProvider implements RealmResourceProvider {
                         .path("broker")
                         .path(t.getAlias())
                         .path("endpoint")
+                        .path("clients")
+                        .path(client.getClientId())
                         .build();
                     logger.debugf("Adding AssertionConsumerService endpoint for IDP %s: %s", t.getAlias(), assertionEndpoint);
                     return assertionEndpoint;
@@ -916,6 +916,8 @@ public class SpidSpMetadataResourceProvider implements RealmResourceProvider {
                     .path("broker")
                     .path(t.getAlias())
                     .path("endpoint")
+                    .path("clients")
+                    .path(client.getClientId())
                     .build();
                 logger.debugf("Adding SingleLogoutService endpoint for IDP %s: %s", t.getAlias(), logoutEndpoint);
                 return logoutEndpoint;

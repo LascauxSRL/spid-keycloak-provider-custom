@@ -16,6 +16,9 @@
     
     "spid.isCollaudo": "true",
     "spid.isTestClient": "true",
+
+    "spid.attributeConsumingServiceIndex": "0",
+    "spid.attributeConsumingServiceName": "default",
     
     "spid.aggregated.company": "Organizzazione fittizia per il collaudo",
     "spid.aggregated.ipaCode": "__aggrsint",

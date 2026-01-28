@@ -112,6 +112,8 @@ import org.keycloak.utils.StringUtil;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.keycloak.broker.spid.metadata.SpidClientConfig;
+import org.keycloak.broker.spid.metadata.SpidSpMetadataResourceProviderFactory;
 
 import java.net.URI;
 import java.security.cert.CertificateException;
@@ -424,10 +426,13 @@ public class SpidSAMLEndpoint {
 
             try {
                 AuthenticationSessionModel authSession;
-                if (StringUtil.isNotBlank(clientId)) {
-                    authSession = samlIdpInitiatedSSO(clientId);
-                } else if (StringUtil.isNotBlank(relayState)) {
+                // For standard SP-initiated SSO, RelayState must be used to recover the auth session,
+                // even when the endpoint path contains a client_id segment (e.g. /endpoint/clients/{clientId}).
+                // Only when RelayState is missing do we treat it as IdP-initiated SSO and use clientId.
+                if (StringUtil.isNotBlank(relayState)) {
                     authSession = callback.getAndVerifyAuthenticationSession(relayState);
+                } else if (StringUtil.isNotBlank(clientId)) {
+                    authSession = samlIdpInitiatedSSO(clientId);
                 } else {
                     logger.error("SAML RelayState parameter was null when it should be returned by the IDP");
                     event.event(EventType.LOGIN);
@@ -576,6 +581,33 @@ public class SpidSAMLEndpoint {
                 try {
                     String issuerURL = getEntityId(session.getContext().getUri(), realm);
                     cvb.addAllowedAudience(URI.create(issuerURL));
+
+                    // Add client-specific entityId for aggregated clients so that the AudienceRestriction
+                    // containing the client metadata URL is also accepted.
+                    AuthenticationSessionModel currentAuthSession = session.getContext().getAuthenticationSession();
+                    if (currentAuthSession != null && currentAuthSession.getClient() != null) {
+                        SpidClientConfig clientConfig = SpidClientConfig.from(currentAuthSession.getClient());
+                        String aggregatedCompany = clientConfig.getAggregatedCompany();
+                        String aggregatedIpaCode = clientConfig.getAggregatedIpaCode();
+                        String aggregatedVatNumber = clientConfig.getAggregatedVatNumber();
+                        boolean hasAggregatedConfig = (aggregatedCompany != null && !aggregatedCompany.isEmpty()) ||
+                                                      (aggregatedIpaCode != null && !aggregatedIpaCode.isEmpty()) ||
+                                                      (aggregatedVatNumber != null && !aggregatedVatNumber.isEmpty());
+                        if (hasAggregatedConfig) {
+                            boolean isPrivate = clientConfig.isAggregatedPrivate();
+                            String pathSegment = isPrivate ? "priv-ag-full" : "pub-ag-full";
+                            String clientEntityId = session.getContext().getUri().getBaseUriBuilder()
+                                    .path("realms").path(realm.getName())
+                                    .path(SpidSpMetadataResourceProviderFactory.ID)
+                                    .path(pathSegment)
+                                    .path("clients")
+                                    .path(currentAuthSession.getClient().getClientId())
+                                    .build()
+                                    .toString();
+                            cvb.addAllowedAudience(URI.create(clientEntityId));
+                        }
+                    }
+
                     // getDestination has been validated to match request URL already so it matches SAML endpoint
                     if (responseType.getDestination() != null) {
                         cvb.addAllowedAudience(URI.create(responseType.getDestination()));
